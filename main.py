@@ -190,7 +190,34 @@ if __name__ == "__main__":
                     # for idx, frame in enumerate(shelf_frames):
                     #     cv2.imshow(f"Shelf Frame {idx+1}", frame)
                     capture_flag = False  # Reset the flag after capturing
-                    break
+
+
+                    if sample_frame is not None and shelf_frames:
+                        sample_pil = Image.fromarray(cv2.cvtColor(sample_frame, cv2.COLOR_BGR2RGB))
+
+                        # Detect the sample box
+                        sample_boxes, annotated_sample, _ = find_sample(model, sample_frame)
+                        x1, y1, x2, y2 = sample_boxes[0][:4]
+                        sample_roi = sample_pil.crop((x1, y1, x2, y2))
+
+                        best_boxes_list = []
+                        shelf_boxes_list = []
+
+                        for img in shelf_frames:
+                            img_pil = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+                            shelf_boxes, anotated_shelf, sw = find_sample(model, img, 20)
+                            if sw:
+                                best_box = find_best_matching_box(sample_roi, img_pil, shelf_boxes, densenet_model, device)
+                                best_boxes_list.append(best_box)
+                                shelf_boxes_list.append(shelf_boxes)
+                        if sw:
+                            break
+                        else:
+                            engine.say("Do it again")
+                            engine.runAndWait()
+                            capture_step = 0
+
+                            
 
             # # Quit on 'q' key press
             # if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -201,25 +228,6 @@ if __name__ == "__main__":
         cv2.destroyAllWindows()
         listener.stop()
 
-    # Process the captured frames here, e.g., extracting features, performing detections, etc.
-    if sample_frame is not None and shelf_frames:
-        sample_pil = Image.fromarray(cv2.cvtColor(sample_frame, cv2.COLOR_BGR2RGB))
-
-        # Detect the sample box
-        sample_boxes, annotated_sample, _ = find_sample(model, sample_frame)
-        x1, y1, x2, y2 = sample_boxes[0][:4]
-        sample_roi = sample_pil.crop((x1, y1, x2, y2))
-
-        best_boxes_list = []
-        shelf_boxes_list = []
-
-        for img in shelf_frames:
-            img_pil = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-            shelf_boxes, anotated_shelf, sw = find_sample(model, img, 20)
-            if sw:
-                best_box = find_best_matching_box(sample_roi, img_pil, shelf_boxes, densenet_model, device)
-                best_boxes_list.append(best_box)
-                shelf_boxes_list.append(shelf_boxes)
 
         # Find the best match in terms of row and column
         row, col = find_best_row_col(best_boxes_list, shelf_boxes_list)
