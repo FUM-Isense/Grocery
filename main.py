@@ -114,7 +114,7 @@ def on_press(key):
         pass
 
 # Function to capture frames when 'b' key is pressed
-def capture_frames(engine, num_frames, pipeline):
+def capture_frames(num_frames, pipeline):
     count = 0
     frames_list = []
 
@@ -160,8 +160,8 @@ if __name__ == "__main__":
     config = rs.config()
     config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 15)
     pipeline.start(config)
-    device = pipeline.get_active_profile().get_device()
-    color_sensor = device.query_sensors()[1]
+    rs_device = pipeline.get_active_profile().get_device()
+    color_sensor = rs_device.query_sensors()[1]
     color_sensor.set_option(rs.option.enable_auto_exposure, True)
 
     sample_frame = None
@@ -175,23 +175,26 @@ if __name__ == "__main__":
                     print("Capturing sample frame...")
                     engine.say("Capturing frame")
                     engine.runAndWait()
-                    sample_frame = capture_frames(engine, 1, pipeline)[0]
+                    sample_frame = capture_frames(1, pipeline)[0]
                     # cv2.imshow("Sample Frame", sample_frame)
                     capture_flag = False  # Reset the flag after capturing
+                    engine.say("Ready")
+                    engine.runAndWait()
 
                 elif capture_step == 2:
                     # Capture five shelf frames
                     print("Capturing shelf frames...")
                     engine.say("Capturing shelf")
                     engine.runAndWait()
-                    shelf_frames = capture_frames(engine, 5, pipeline)
+                    shelf_frames = capture_frames(5, pipeline)
                     # for idx, frame in enumerate(shelf_frames):
                     #     cv2.imshow(f"Shelf Frame {idx+1}", frame)
                     capture_flag = False  # Reset the flag after capturing
+                    break
 
-            # Quit on 'q' key press
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+            # # Quit on 'q' key press
+            # if cv2.waitKey(1) & 0xFF == ord('q'):
+            #     break
 
     finally:
         pipeline.stop()
@@ -227,12 +230,12 @@ if __name__ == "__main__":
         best_box = best_boxes_list[-1]
         x1, y1, x2, y2 = map(int, best_box[:4])
 
-        cv2.rectangle(matched_shelf_image, (x1, y1), (x2, y2), (0, 0, 255), 2)
-        cv2.putText(matched_shelf_image, f'Row: {row}, Col: {col}', (x1, y1 - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+        # cv2.rectangle(matched_shelf_image, (x1, y1), (x2, y2), (0, 0, 255), 2)
+        # cv2.putText(matched_shelf_image, f'Row: {row}, Col: {col}', (x1, y1 - 10),
+        #             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
 
-        cv2.imshow("Matched Shelf Image", matched_shelf_image)
-        cv2.waitKey(0)
+        # cv2.imshow("Matched Shelf Image", matched_shelf_image)
+        # cv2.waitKey(0)
 
     # Provide voice feedback
     feedback_message = f"located at row {row}, column {col}."

@@ -102,14 +102,14 @@ def find_best_row_col(best_boxes_list, shelf_boxes_list):
 def capture_frames(engine, counter):
     count = 0
     screenShotCheck = False
-    screen_shot = None
+    screen_shot = []
 
     pipeline = rs.pipeline()
     config = rs.config()
     config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 15)
     pipeline.start(config)
-    device = pipeline.get_active_profile().get_device()
-    color_sensor = device.query_sensors()[1]
+    rs_device = pipeline.get_active_profile().get_device()
+    color_sensor = rs_device.query_sensors()[1]
     color_sensor.set_option(rs.option.enable_auto_exposure, True)
 
     try:
@@ -136,7 +136,7 @@ def capture_frames(engine, counter):
             if cv2.waitKey(1) & 0xFF == ord(' '):  # b key pressed
                 engine.say("Capturing")
                 engine.runAndWait()
-                screen_shot = frame
+                screen_shot.append(frame)
                 screenShotCheck = True
 
             if cv2.waitKey(1) & 0xFF == ord('q'):  # Quit when 'q' is pressed
@@ -163,11 +163,12 @@ if __name__ == "__main__":
 
     engine.say("START")
     engine.runAndWait()
-    video = False
-    for i in range(1, 21):
+    video = True
+    for i in range(1, 2):
         # Load the sample image
         if video:
             sample = capture_frames(engine, 1)[0]
+
         else:
             sample = cv2.imread(f'/home/redha/cybathlon/temp_grocery/grocery_v5/new/saved_frame_{i}.png')
 
@@ -197,9 +198,10 @@ if __name__ == "__main__":
         shelf_boxes_list = []
         
         for img in shelf:
+            shelf_pil = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
             shelf_boxes, anotated_shelf, sw = find_sample(model, img, 20)
             if sw:
-                best_box = find_best_matching_box(sample_roi, img, shelf_boxes, densenet_model, device)
+                best_box = find_best_matching_box(sample_roi, shelf_pil, shelf_boxes, densenet_model, device)
                 best_boxes_list.append(best_box)
                 shelf_boxes_list.append(shelf_boxes)
 
